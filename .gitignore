@@ -1,0 +1,23 @@
+# ---- Virtual environment ----
+venv/
+
+# ---- Sensitive Google API Files ----
+client_secrets.json
+credentials.json
+
+# ---- Local runtime data ----
+processed_files.json
+downloads/
+__pycache__/
+
+# ---- System / IDE files ----
+*.pyc
+*.pyo
+*.pyd
+.vscode/
+.idea/
+.DS_Store
+
+# ---- Optional outputs ----
+*.mp3
+audio/
