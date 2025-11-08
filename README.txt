@@ -1,0 +1,136 @@
+==================================================
+SoundBookSoundJai Project - OCR & Drive Automation
+==================================================
+
+This project automatically reads images of books or documents uploaded to Google Drive, 
+processes them (removes background and enhances text), and prepares them for OCR 
+(Optical Character Recognition).
+
+Developed with Python, OpenCV, Tesseract OCR, and Google Drive API.
+
+------------------------------------------
+REQUIREMENTS
+------------------------------------------
+Python 3.10 or newer
+
+System dependencies:
+- Tesseract OCR engine
+- Internet connection for Google Drive API
+
+Python libraries (installed automatically from requirements.txt): "pip install -r requirements.txt"
+- pydrive2
+- pytesseract
+- opencv-python
+- numpy
+- Pillow
+- rembg
+- onnxruntime
+- gTTS
+- matplotlib
+- python-dotenv (optional)
+
+------------------------------------------
+INSTALLATION STEPS
+------------------------------------------
+
+1️. Clone or download this project:
+    git clone https://github.com/<your-username>/SoundBookSoundJai_Project.git
+    cd SoundBookSoundJai_Project
+
+2. Create a virtual environment (recommended):
+    python -m venv venv
+
+3. Activate the virtual environment:
+    On Windows:
+        venv\Scripts\activate
+    On macOS/Linux:
+        source venv/bin/activate
+
+4. Install all dependencies:
+    pip install -r requirements.txt
+
+5️. Install Tesseract OCR engine:
+
+      Windows:
+        Download and install from:
+        https://github.com/UB-Mannheim/tesseract/wiki
+        Then make sure to set the path inside `processing.py`:
+        pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+      macOS:
+        brew install tesseract
+
+      Linux (Ubuntu/Debian):
+        sudo apt install tesseract-ocr
+
+------------------------------------------
+GOOGLE DRIVE SETUP
+------------------------------------------
+
+1️. Go to https://console.cloud.google.com/
+2️. Create a new project (example: DriveOCRProject)
+3️. Enable the Google Drive API.
+4️. Create OAuth client credentials (type: Desktop App).
+5️. Download the `client_secrets.json` file.
+6️. Place it in the same folder as `drive_ocr_watcher.py`.
+7️. When you run the program for the first time, a browser window will open.
+   Log in with your Google account and approve access.
+
+A new file `credentials.json` will be created automatically for future runs.
+
+------------------------------------------
+FOLDER STRUCTURE (Google Drive)
+------------------------------------------
+
+You should have a folder on Google Drive like this:
+
+    Project_image/
+    ├── Images/                <- Upload images here
+    ├── Removed_bg_images/     <- Processed (background removed) images appear here
+    └── audio/                 <- (optional for text-to-speech output)
+
+------------------------------------------
+▶RUNNING THE PROGRAM
+------------------------------------------
+
+1️. Activate your virtual environment (if not already active):
+    venv\Scripts\activate
+
+2️. Run the watcher script:
+    python drive_ocr_watcher.py
+
+3️. Upload new images to your Google Drive "Images" folder.
+
+4️. The script will automatically:
+    - Detect new uploads
+    - Download the image
+    - Remove the background
+    - Enhance the image for OCR
+    - Upload the processed image back to the "Removed_bg_images" folder
+
+5️. The console will show logs for each processed file.
+
+------------------------------------------
+DO NOT UPLOAD THESE FILES TO GITHUB
+------------------------------------------
+- client_secrets.json  (contains private API credentials)
+- credentials.json     (contains personal access token)
+- downloads/           (temporary local files)
+- venv/                (virtual environment)
+- processed_files.json (runtime log)
+
+These are already excluded in `.gitignore`.
+
+------------------------------------------
+TIP: RESETTING THE WATCHER
+------------------------------------------
+If you want to reprocess all files, delete:
+    processed_files.json
+Then rerun the script.
+
+------------------------------------------
+CREDITS
+------------------------------------------
+Developed by: Krittin Tejasen 6613112, Ruaengsiri Nantavit 6613122
+Project: SoundBookSoundJai
+Purpose: Assistive reading tool for visually impaired users
