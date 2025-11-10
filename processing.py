@@ -153,7 +153,7 @@ def pytesseract_ocr(image):
     pil_img = Image.fromarray(image)
     config = '--psm 3'
     text = pytesseract.image_to_string(pil_img, lang='eng', config=config)
-    print("\n--- OCR Result ---\n", text)
+    # print("\n--- OCR Result ---\n", text)
     return text
 
 def speak_text(text):
