@@ -136,7 +136,7 @@ def enhance_for_ocr_auto(image):
         processed = enhance_contrast(ensure_bgr(processed), 1.0 + contrast_strength)
 
     if not (info["is_dark"] or info["low_contrast"] or info["is_noisy"]):
-        print("[ACTION] Normal image → normalize lighting")
+        print("[ACTION] Normal image -> normalize lighting")
         processed = normalize_lighting(ensure_bgr(processed))
 
     print("[ACTION] Adaptive binarization...")
@@ -145,7 +145,7 @@ def enhance_for_ocr_auto(image):
     processed = cv2.morphologyEx(processed, cv2.MORPH_OPEN, kernel)
     print("[ACTION] Deskewing...")
     processed = deskew_text_based(ensure_bgr(processed))
-    print("[DONE] Enhancement completed ✅")
+    print("[DONE] Enhancement completed !!")
     return processed
 
 # ---------- OCR & Speech ----------

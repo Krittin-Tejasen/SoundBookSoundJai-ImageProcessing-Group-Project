@@ -2,12 +2,6 @@
 SoundBookSoundJai Project - OCR & Drive Automation
 ==================================================
 
-This project automatically reads images of books or documents uploaded to Google Drive, 
-processes them (removes background and enhances text), and prepares them for OCR 
-(Optical Character Recognition).
-
-Developed with Python, OpenCV, Tesseract OCR, and Google Drive API.
-
 ------------------------------------------
 REQUIREMENTS
 ------------------------------------------
@@ -34,7 +28,7 @@ INSTALLATION STEPS
 ------------------------------------------
 
 1️. Clone or download this project:
-    git clone https://github.com/<your-username>/SoundBookSoundJai_Project.git
+    git clone https://github.com/Krittin-Tejasen/SoundBookSoundJai-ImageProcessing-Group-Project.git
     cd SoundBookSoundJai_Project
 
 2. Create a virtual environment (recommended):
