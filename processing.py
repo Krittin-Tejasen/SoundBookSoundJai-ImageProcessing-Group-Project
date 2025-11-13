@@ -190,6 +190,19 @@ def pytesseract_ocr(image):
     # print("\n--- OCR Result ---\n", text)
     return text
 
+def text_to_speech(text: str, base_name:str):
+    """Convert text to an MP3 file and return its local path."""
+    if not text.strip():
+        print("[INFO] No text to speak.")
+        return None
+    os.makedirs("downloads/audio", exist_ok=True)
+    audio_path = os.path.join("downloads", "audio", f"{base_name}.mp3")
+    tts = gTTS(text)
+    tts.save(audio_path)
+    print(f"[TTS] Audio file saved -> {audio_path}")
+    return audio_path
+
+
 def speak_text(text):
     if not text.strip():
         print("[INFO] No text to speak.")
