@@ -2,9 +2,13 @@ from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 import cv2, time, os
 from processing import remove_background, enhance_for_ocr_auto, pytesseract_ocr
+from ml_model import load_models, process_for_ocr
 from PIL import Image
 import pytesseract
 
+
+base_dir = "C:/Users/User/OneDrive/Desktop/SoundBookSoundJai_Project/models"
+rf_model, cnn_model, device = load_models(base_dir)
 
 # ----------------------------------------
 # ---------- Google Drive setup ----------
@@ -49,13 +53,14 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id):
     base_name, _ = os.path.splitext(filename)
     bg_removed_path = os.path.join("downloads", "bg_removed", f"bg_removed_{base_name}.png")
 
-    # Remove image background
+    # ML quality check
+    _ = process_for_ocr(local_path, rf_model, cnn_model, device)
 
+    # Remove image background
     bg_removed_path = remove_background(local_path, bg_removed_path)
     print(f"[INFO] Background removed -> {bg_removed_path}")
 
     # Enhance image
-
     img = cv2.imread(bg_removed_path)
     if img is None:
         print("[WARN] Could not load background-removed image.")
@@ -67,7 +72,6 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id):
     print(f"[DONE] Enhanced image saved -> {processed_path}")
 
     # OCR
-    
     processed_img = cv2.imread(processed_path)
     if processed_img is not None:
         text = pytesseract_ocr(processed_img)
@@ -79,7 +83,6 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id):
         print("[WARN] Could not read processed image for OCR.")
 
     # Upload processed image back to Drive
-
     upload_file_to_drive(drive, processed_path, output_folder_id)
     upload_file_to_drive(drive, text_file_path, text_folder_id)
     print(f"[UPLOAD] Processed image uploaded to Drive ✅")
@@ -89,6 +92,7 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id):
 # ------------- Main Watcher -------------
 # ----------------------------------------
 def watch_drive_folder(input_folder_id, output_folder_id, text_folder_id, poll_interval=10):
+    
     drive = connect_drive()
     seen = set()
     os.makedirs("downloads", exist_ok=True)

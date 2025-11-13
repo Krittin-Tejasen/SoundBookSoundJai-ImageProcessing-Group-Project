@@ -34,7 +34,7 @@ INSTALLATION STEPS
 ------------------------------------------
 
 1️. Clone or download this project:
-    git clone https://github.com/<your-username>/SoundBookSoundJai_Project.git
+    git clone https://github.com/Krittin-Tejasen/SoundBookSoundJai_Project.git
     cd SoundBookSoundJai_Project
 
 2. Create a virtual environment (recommended):
