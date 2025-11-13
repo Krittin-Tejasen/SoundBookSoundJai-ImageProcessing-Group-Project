@@ -74,29 +74,53 @@ def binarize_adaptive(img):
         cv2.THRESH_BINARY, 31, 15
     )
 
-def deskew_text_based(img):
-    gray = ensure_gray(img)
-    edges = cv2.Canny(gray, 50, 150, apertureSize=3)
-    lines = cv2.HoughLines(edges, 1, np.pi / 180, 150)
-    if lines is None:
-        return gray
-    angles = []
-    for line in lines:
-        rho, theta = line[0]
-        deg = (theta * 180 / np.pi) - 90
-        if -60 < deg < 60:
-            angles.append(deg)
-    if not angles:
-        return gray
-    angle = np.median(angles)
-    print(f"[INFO] Detected angle: {angle:.2f}°")
-    (h, w) = gray.shape[:2]
-    M = cv2.getRotationMatrix2D((w // 2, h // 2), angle, 1.0)
-    rotated = cv2.warpAffine(gray, M, (w, h),
-                             flags=cv2.INTER_CUBIC,
-                             borderMode=cv2.BORDER_CONSTANT,
-                             borderValue=255)
+
+def deskew_and_expand(image, angle, expand_threshold=10):
+    """
+    Deskew image and auto-expand canvas only if angle exceeds threshold.
+    """
+    (h, w) = image.shape[:2]
+    # หาถ้าเอียงจริงเกิน threshold ค่อยขยาย
+    if abs(angle) < expand_threshold:
+        center = (w // 2, h // 2)
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+        border_value = 255 if len(image.shape) == 2 else (255,255,255)
+        rotated = cv2.warpAffine(image, M, (w, h),
+                                flags=cv2.INTER_LINEAR,
+                                borderMode=cv2.BORDER_CONSTANT,
+                                borderValue=border_value)
+    else:
+        angle_rad = np.deg2rad(angle)
+        cos = abs(np.cos(angle_rad))
+        sin = abs(np.sin(angle_rad))
+        new_w = int(h * sin + w * cos)
+        new_h = int(h * cos + w * sin)
+        center = (w // 2, h // 2)
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+        M[0, 2] += (new_w - w) // 2
+        M[1, 2] += (new_h - h) // 2
+        border_value = 255 if len(image.shape) == 2 else (255,255,255)
+        rotated = cv2.warpAffine(image, M, (new_w, new_h),
+                                flags=cv2.INTER_LINEAR,
+                                borderMode=cv2.BORDER_CONSTANT,
+                                borderValue=border_value)
     return rotated
+
+def detect_skew_angle_projection(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if len(image.shape)==3 else image.copy()
+    thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+    angles = np.arange(-45, 46, 1)  # เทสต์ทุกมุม -45 ถึง 45 องศา
+    scores = []
+    for angle in angles:
+        M = cv2.getRotationMatrix2D((thresh.shape[1]//2, thresh.shape[0]//2), angle, 1)
+        rotated = cv2.warpAffine(thresh, M, (thresh.shape[1], thresh.shape[0]),
+                                 borderMode=cv2.BORDER_CONSTANT,
+                                 borderValue=0)
+        proj = np.sum(rotated, axis=1)
+        score = np.std(proj)
+        scores.append(score)
+    best_angle = angles[np.argmax(scores)]
+    return best_angle
 
 def remove_background(image_path, output_path):
     input_image = Image.open(image_path)
@@ -115,13 +139,16 @@ def enhance_for_ocr_auto(image):
     img = image.copy()
     info = analyze_image(img)
     print("[INFO] Image analysis:", info)
+
     processed = img.copy()
 
+    # ---------- Adaptive Strength Calculation ----------
     dark_strength = max(0, min(1, (100 - info["brightness"]) / 100)) if info["is_dark"] else 0
     contrast_strength = max(0, min(1, (40 - info["contrast"]) / 40)) if info["low_contrast"] else 0
     noise_strength = max(0, min(1, (np.var(ensure_gray(img)) - 2000) / 3000)) if info["is_noisy"] else 0
     print(f"[INFO] Adaptive strength: dark={dark_strength:.2f}, contrast={contrast_strength:.2f}, noise={noise_strength:.2f}")
 
+    # ---------- Apply Enhancements ----------
     if dark_strength > 0:
         print(f"[ACTION] Brightness correction (strength={dark_strength:.2f})")
         processed = fix_brightness(ensure_bgr(processed), 1.0 + dark_strength)
@@ -141,10 +168,17 @@ def enhance_for_ocr_auto(image):
 
     print("[ACTION] Adaptive binarization...")
     processed = binarize_adaptive(ensure_bgr(processed))
+
+    # Morphology cleanup
     kernel = np.ones((2, 2), np.uint8)
     processed = cv2.morphologyEx(processed, cv2.MORPH_OPEN, kernel)
+
     print("[ACTION] Deskewing...")
-    processed = deskew_text_based(ensure_bgr(processed))
+    # แก้การ deskew: ตรวจหามุมเอียงและใช้ deskew_and_expand เพื่อป้องกันตกขอบ
+    detected_angle = detect_skew_angle_projection(ensure_bgr(processed))  # ฟังก์ชันนี้ควร return มุมเอียง
+    print(f"[INFO] Detected (text-based) angle: {detected_angle:.2f}°")
+    processed = deskew_and_expand(ensure_bgr(processed), detected_angle)
+
     print("[DONE] Enhancement completed ✅")
     return processed
 
