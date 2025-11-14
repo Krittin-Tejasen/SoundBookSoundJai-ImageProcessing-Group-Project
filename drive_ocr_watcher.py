@@ -5,6 +5,9 @@ import json
 from processing import remove_background, enhance_for_ocr_auto, pytesseract_ocr, text_to_speech
 from ml_model import load_models, process_for_ocr
 from gtts import gTTS 
+from playsound import playsound
+import threading
+import json
 
 
 base_dir = "C:/Users/User/OneDrive/Desktop/SoundBookSoundJai-ImageProcessing-Group-Project/models"
@@ -85,7 +88,7 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
                 break
             elif resp in ("s", "skip", "n", "no"):
                 print("[DECISION] User chose to skip this file.")
-                return "skipped"
+                return {"status": "skipped", "audio_path": None}
             else:
                 print("Please enter 'y' to continue or 's' to skip.")
 
@@ -131,7 +134,63 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
         upload_file_to_drive(drive, audio_path, audio_folder_id)
     print(f"[UPLOAD] Processed image uploaded to Drive ✅")
 
-    return "processed"
+    return {"status": "processed", "audio_path": audio_path}
+
+
+# ----------------------------------------
+# ----------- Config & Audio -------------
+# ----------------------------------------
+
+# play_mode: "immediate", "batch", or "prompt"
+PLAY_MODE = "prompt"
+# For prompt mode, auto-decide after timeout_seconds if user doesn't reply
+PROMPT_TIMEOUT_SECONDS = 30
+# Use 'playsound' or 'pydub' backend. If playsound not installed, pip install playsound
+PLAYBACK_BACKEND = "playsound"
+
+def play_audio_blocking(path):
+    try:
+        playsound(path)
+    except Exception as e:
+        print("[AUDIO PLAY ERROR]", e)
+
+def play_audio_nonblocking(path):
+    t = threading.Thread(target=play_audio_blocking, args=(path,), daemon=True)
+    t.start()
+    return t
+
+def save_audio_queue(paths, queue_file="audio_queue.json"):
+    existing = []
+    if os.path.exists(queue_file):
+        try:
+            with open(queue_file, "r", encoding="utf-8") as fq:
+                existing = json.load(fq)
+        except:
+            existing = []
+    existing.extend(paths)
+    with open(queue_file, "w", encoding="utf-8") as fq:
+        json.dump(existing, fq, ensure_ascii=False)
+
+def load_audio_queue(queue_file="audio_queue.json"):
+    if not os.path.exists(queue_file):
+        return []
+    try:
+        with open(queue_file, "r", encoding="utf-8") as fq:
+            return json.load(fq)
+    except:
+        return []
+
+def play_queued_audios(queue_file="audio_queue.json"):
+    q = load_audio_queue(queue_file)
+    if not q:
+        return
+    print(f"[AUDIO] Playing queued {len(q)} audios")
+    for p in q:
+        play_audio_blocking(p)
+    # clear queue
+    with open(queue_file, "w", encoding="utf-8") as f:
+        json.dump([], f)
+
 
 # ----------------------------------------
 # ------------- Main Watcher -------------
@@ -146,20 +205,76 @@ def watch_drive_folder(input_folder_id, output_folder_id, text_folder_id, audio_
     while True:
         try:
             files = get_folder_files(drive, input_folder_id)
+                        # collect new image files in this poll
+            new_image_files = []
             for f in files:
-                #skip if processed before
                 if f['id'] in seen:
                     continue
+                if f['mimeType'].startswith('image/'):
+                    new_image_files.append(f)
 
-                if f['id'] not in seen and f['mimeType'].startswith('image/'):
-                    print(f"[NEW] {f['title']}")
-                    local_path = os.path.join("downloads", f['title'])
-                    f.GetContentFile(local_path)
-                    result = process_image_file(local_path, drive, output_folder_id, text_folder_id, audio_folder_id)
-                    # mark as processed whether skipped or processed
-                    seen.add(f['id'])
-                    save_seen_files(seen)
+            if not new_image_files:
+                time.sleep(poll_interval)
+                continue
 
+            # process each new file and gather results
+            results = []
+            for f in new_image_files:
+                print(f"[NEW] {f['title']}")
+                local_path = os.path.join("downloads", f['title'])
+                f.GetContentFile(local_path)
+                res = process_image_file(local_path, drive, output_folder_id, text_folder_id, audio_folder_id)
+                # ensure res is a dict; convert None to error dict if needed
+                if res is None:
+                    res = {"status": "error", "audio_path": None}
+                results.append((f, res))
+                # mark as processed regardless of status so we don't re-download repeatedly
+                seen.add(f['id'])
+                save_seen_files(seen)
+
+            # gather produced audio paths
+            audio_paths = [r[1].get("audio_path") for r in results if r[1].get("audio_path")]
+            if not audio_paths:
+                time.sleep(poll_interval)
+                continue
+
+            # Decide playback based on PLAY_MODE
+            if PLAY_MODE == "immediate":
+                for ap in audio_paths:
+                    print(f"[AUDIO] Playing {ap}")
+                    play_audio_blocking(ap)
+
+            elif PLAY_MODE == "batch":
+                print(f"[AUDIO] {len(audio_paths)} files queued. Playing all now.")
+                for ap in audio_paths:
+                    play_audio_blocking(ap)
+
+            elif PLAY_MODE == "prompt":
+                if len(audio_paths) == 1:
+                    print(f"[AUDIO] Playing single audio {audio_paths[0]}")
+                    play_audio_blocking(audio_paths[0])
+                else:
+                    # prompt user with timeout; simple blocking prompt
+                    print(f"[DECISION] {len(audio_paths)} audios are ready. Play now? (y = play now / n = skip / b = queue for later) ")
+                    start = time.time()
+                    answer = ""
+                    try:
+                        # user input (blocking) — will wait until user types or your environment times out
+                        answer = input().strip().lower()
+                    except Exception:
+                        answer = ""
+                    # timeout fallback: if empty and time exceeded, auto-skip
+                    if not answer and (time.time() - start) > PROMPT_TIMEOUT_SECONDS:
+                        answer = "n"
+                        print()
+                    if answer in ("y", "yes"):
+                        for ap in audio_paths:
+                            play_audio_blocking(ap)
+                    elif answer in ("b", "batch"):
+                        save_audio_queue(audio_paths)
+                        print("[AUDIO] Saved to queue for later playback.")
+                    else:
+                        print("[AUDIO] Skipped playback.")
             time.sleep(poll_interval)
         except Exception as e:
             print("[ERROR]", e)
