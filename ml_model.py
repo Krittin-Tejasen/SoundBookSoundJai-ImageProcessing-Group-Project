@@ -29,7 +29,10 @@ def extract_features(img_path):
     return [brightness, contrast, edge_density, edge_var, entropy]
 
 def predict_image(img_path, rf_model, cnn_model, device):
-    features = np.array(extract_features(img_path)).reshape(1,-1)
+    features = extract_features(img_path)
+    if features is None:
+        raise ValueError(f"Could not extract features from {img_path}")
+    features = np.array(features).reshape(1,-1)
     rf_pred = int(rf_model.predict(features)[0])
     transform = transforms.Compose([
         transforms.Resize((224,224)),
@@ -45,10 +48,20 @@ def predict_image(img_path, rf_model, cnn_model, device):
     return rf_pred, cnn_pred
 
 def process_for_ocr(img_path, rf_model, cnn_model, device):
-    rf_pred, cnn_pred = predict_image(img_path, rf_model, cnn_model, device)
-    if cnn_pred == 1 or rf_pred == 1:
+    """
+    Returns:
+      img: cv2 image read from img_path (or None)
+      bad_quality: True if detected embedded images or poor quality, else False
+    """
+    try:
+        rf_pred, cnn_pred = predict_image(img_path, rf_model, cnn_model, device)
+    except Exception as e:
+        print(f"[ML ERROR] prediction failed: {e}")
+        return cv2.imread(img_path), False
+
+    bad_quality = (cnn_pred == 1 or rf_pred == 1)
+    if bad_quality:
         print("⚠️ Detected embedded images or poor quality page.")
     else:
         print("✅ Page appears clean and ready for OCR.")
-    return cv2.imread(img_path),bad_quality
-
+    return cv2.imread(img_path), bad_quality

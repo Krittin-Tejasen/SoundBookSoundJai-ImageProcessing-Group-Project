@@ -64,7 +64,6 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
     print(f"[INFO] Processing {local_path}")
 
     # Ensure local folders exist
-
     os.makedirs("downloads/bg_removed", exist_ok=True)
     os.makedirs("downloads/processed", exist_ok=True)
     os.makedirs("downloads/text", exist_ok=True)
@@ -74,19 +73,21 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
     base_name, _ = os.path.splitext(filename)
     bg_removed_path = os.path.join("downloads", "bg_removed", f"bg_removed_{base_name}.png")
 
-    # ML quality check
-    _ = process_for_ocr(local_path, rf_model, cnn_model, device)
+    # ML quality check: returns image and bad_quality flag
+    img_read, bad_quality = process_for_ocr(local_path, rf_model, cnn_model, device)
 
-    # ถ้าคุณภาพแย่ → ถามผู้ใช้ว่าจะ Continue หรือ Skip
-    if _["is_bad"]:
-        print("\n⚠️ Image Quality Warning:")
-        print("   →", _["message"])
-        choice = input("Do you want to continue? (c = continue, s = skip): ").strip().lower()
-
-        if choice == "s":
-            print("[INFO] User chose to skip this image.\n")
-            return  # ยกเลิกการประมวลผลภาพนี้ทันที
-
+    # If ML suspects bad quality, ask user to continue or skip
+    if bad_quality:
+        while True:
+            resp = input(f"[DECISION] {filename} appears to have embedded images or poor quality. Continue processing? (y = continue / s = skip): ").strip().lower()
+            if resp in ("y", "yes"):
+                print("[DECISION] User chose to continue processing.")
+                break
+            elif resp in ("s", "skip", "n", "no"):
+                print("[DECISION] User chose to skip this file.")
+                return "skipped"
+            else:
+                print("Please enter 'y' to continue or 's' to skip.")
 
     # Remove image background
     bg_removed_path = remove_background(local_path, bg_removed_path)
@@ -97,7 +98,7 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
     if img is None:
         print("[WARN] Could not load background-removed image.")
         return
-    
+
     processed = enhance_for_ocr_auto(img)
     processed_path = os.path.join("downloads", "processed", f"processed_{base_name}.png")
     cv2.imwrite(processed_path, processed)
@@ -105,6 +106,7 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
 
     # OCR
     processed_img = cv2.imread(processed_path)
+    text = ""
     if processed_img is not None:
         text = pytesseract_ocr(processed_img)
         text_file_path = os.path.join("downloads", "text", f"{base_name}.txt")
@@ -113,8 +115,11 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
         print(f"[OCR] Extracted text saved -> {text_file_path}")
     else:
         print("[WARN] Could not read processed image for OCR.")
+        text_file_path = os.path.join("downloads", "text", f"{base_name}.txt")
+        with open(text_file_path, "w", encoding="utf-8") as f:
+            f.write("")
 
-    clean_text = text.replace("\n", " ").strip()  
+    clean_text = text.replace("\n", " ").strip()
 
     # Text to Speech
     audio_path = text_to_speech(clean_text, base_name)
@@ -126,6 +131,7 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
         upload_file_to_drive(drive, audio_path, audio_folder_id)
     print(f"[UPLOAD] Processed image uploaded to Drive ✅")
 
+    return "processed"
 
 # ----------------------------------------
 # ------------- Main Watcher -------------
@@ -149,8 +155,8 @@ def watch_drive_folder(input_folder_id, output_folder_id, text_folder_id, audio_
                     print(f"[NEW] {f['title']}")
                     local_path = os.path.join("downloads", f['title'])
                     f.GetContentFile(local_path)
-                    process_image_file(local_path, drive, output_folder_id, text_folder_id, audio_folder_id)
-                    # mark as processed
+                    result = process_image_file(local_path, drive, output_folder_id, text_folder_id, audio_folder_id)
+                    # mark as processed whether skipped or processed
                     seen.add(f['id'])
                     save_seen_files(seen)
 
