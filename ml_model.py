@@ -50,4 +50,5 @@ def process_for_ocr(img_path, rf_model, cnn_model, device):
         print("⚠️ Detected embedded images or poor quality page.")
     else:
         print("✅ Page appears clean and ready for OCR.")
-    return cv2.imread(img_path)
+    return cv2.imread(img_path),bad_quality
+

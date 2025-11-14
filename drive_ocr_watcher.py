@@ -7,7 +7,7 @@ from ml_model import load_models, process_for_ocr
 from gtts import gTTS 
 
 
-base_dir = "C:/Users/User/OneDrive/Desktop/SoundBookSoundJai_Project/models"
+base_dir = "C:/Users/User/OneDrive/Desktop/SoundBookSoundJai-ImageProcessing-Group-Project/models"
 rf_model, cnn_model, device = load_models(base_dir)
 
 # ----------------------------------------
@@ -76,6 +76,17 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
 
     # ML quality check
     _ = process_for_ocr(local_path, rf_model, cnn_model, device)
+
+    # ถ้าคุณภาพแย่ → ถามผู้ใช้ว่าจะ Continue หรือ Skip
+    if _["is_bad"]:
+        print("\n⚠️ Image Quality Warning:")
+        print("   →", _["message"])
+        choice = input("Do you want to continue? (c = continue, s = skip): ").strip().lower()
+
+        if choice == "s":
+            print("[INFO] User chose to skip this image.\n")
+            return  # ยกเลิกการประมวลผลภาพนี้ทันที
+
 
     # Remove image background
     bg_removed_path = remove_background(local_path, bg_removed_path)
@@ -149,8 +160,8 @@ def watch_drive_folder(input_folder_id, output_folder_id, text_folder_id, audio_
             time.sleep(30)
 
 if __name__ == "__main__":
-    input_folder_id = "1UTz5qx_RtAyL_IzzKstMpkw1w804kurY"       #   Images folder
-    output_folder_id = "1PUh2BB5taTWTMZVPW_qVOi62yW9NA-Xb"      #   Removed_bg_images folder
-    text_folder_id = "1SHiMXazxwmiRFJ7PIOhQMS8PAJBhuHZV"        #   Text folder
-    audio_folder_id = "1Ys4Dj1ivHEBWQNhUOzkKPoFHg9jZQuee"       #   Audio folder
+    input_folder_id = "168KayTrlk3_r8ScA6qHmTZNfDMshkg6I"       #   Images folder
+    output_folder_id = "1k2EvExrg5-jH3VGDinMZhuOXM8d2XlSn"      #   Removed_bg_images folder
+    text_folder_id = "1IbW5zPDM9_0Bv5y296zuVlzqMNAblOjC"        #   Text folder
+    audio_folder_id = "1fqrLE3KtwQVCRez4wwGMlSKdxEs3Px5v"       #   Audio folder
     watch_drive_folder(input_folder_id, output_folder_id, text_folder_id, audio_folder_id)
