@@ -31,7 +31,7 @@ Python libraries (installed automatically from requirements.txt): "pip install -
 INSTALLATION STEPS
 ------------------------------------------
 
-1. Clone or download this project:
+1️. Clone or download this project:
     git clone https://github.com/Krittin-Tejasen/SoundBookSoundJai-ImageProcessing-Group-Project.git
     cd SoundBookSoundJai_Project
 
