@@ -1,12 +1,6 @@
-==================================================
-SoundBookSoundJai Project - OCR & Drive Automation
-==================================================
-
-This project automatically reads images of books or documents uploaded to Google Drive, 
-processes them (removes background and enhances text), and prepares them for OCR 
-(Optical Character Recognition).
-
-Developed with Python, OpenCV, Tesseract OCR, and Google Drive API.
+=========================
+SoundBookSoundJai Project
+=========================
 
 ------------------------------------------
 REQUIREMENTS
@@ -27,14 +21,18 @@ Python libraries (installed automatically from requirements.txt): "pip install -
 - onnxruntime
 - gTTS
 - matplotlib
-- python-dotenv (optional)
+- torch, torchvision, torchaudio
+- scikit-learn, joblib
+- tqdm
+- PyYAML
+- requests
 
 ------------------------------------------
 INSTALLATION STEPS
 ------------------------------------------
 
-1️. Clone or download this project:
-    git clone https://github.com/Krittin-Tejasen/SoundBookSoundJai_Project.git
+1. Clone or download this project:
+    git clone https://github.com/Krittin-Tejasen/SoundBookSoundJai-ImageProcessing-Group-Project.git
     cd SoundBookSoundJai_Project
 
 2. Create a virtual environment (recommended):
@@ -49,7 +47,7 @@ INSTALLATION STEPS
 4. Install all dependencies:
     pip install -r requirements.txt
 
-5️. Install Tesseract OCR engine:
+5. Install Tesseract OCR engine:
 
       Windows:
         Download and install from:
@@ -67,13 +65,13 @@ INSTALLATION STEPS
 GOOGLE DRIVE SETUP
 ------------------------------------------
 
-1️. Go to https://console.cloud.google.com/
-2️. Create a new project (example: DriveOCRProject)
-3️. Enable the Google Drive API.
-4️. Create OAuth client credentials (type: Desktop App).
-5️. Download the `client_secrets.json` file.
-6️. Place it in the same folder as `drive_ocr_watcher.py`.
-7️. When you run the program for the first time, a browser window will open.
+1. Go to https://console.cloud.google.com/
+2. Create a new project (example: DriveOCRProject)
+3. Enable the Google Drive API.
+4. Create OAuth client credentials (type: Desktop App).
+5. Download the `client_secrets.json` file.
+6. Place it in the same folder as `drive_ocr_watcher.py`.
+7. When you run the program for the first time, a browser window will open.
    Log in with your Google account and approve access.
 
 A new file `credentials.json` will be created automatically for future runs.
@@ -87,28 +85,32 @@ You should have a folder on Google Drive like this:
     Project_image/
     ├── Images/                <- Upload images here
     ├── Removed_bg_images/     <- Processed (background removed) images appear here
-    └── audio/                 <- (optional for text-to-speech output)
+    ├── Text/                  <- OCR results (.txt)
+    └── Audio/                 <- Text-to-speech output (.mp3)
 
 ------------------------------------------
-▶RUNNING THE PROGRAM
+RUNNING THE PROGRAM
 ------------------------------------------
 
-1️. Activate your virtual environment (if not already active):
+1. Activate your virtual environment (if not already active):
     venv\Scripts\activate
 
-2️. Run the watcher script:
+2. Run the watcher script:
     python drive_ocr_watcher.py
 
-3️. Upload new images to your Google Drive "Images" folder.
+3. Upload new images to your Google Drive "Images" folder.
 
-4️. The script will automatically:
+4. The script will automatically:
     - Detect new uploads
     - Download the image
+    - ML check page quality
     - Remove the background
-    - Enhance the image for OCR
-    - Upload the processed image back to the "Removed_bg_images" folder
+    - Enhance the image
+    - Extract text (OCR)
+    - Generate speech (.mp3)
+    - Upload results back to Drive
 
-5️. The console will show logs for each processed file.
+5. The console will show logs for each processed file.
 
 ------------------------------------------
 DO NOT UPLOAD THESE FILES TO GITHUB
@@ -118,8 +120,6 @@ DO NOT UPLOAD THESE FILES TO GITHUB
 - downloads/           (temporary local files)
 - venv/                (virtual environment)
 - processed_files.json (runtime log)
-
-These are already excluded in `.gitignore`.
 
 ------------------------------------------
 TIP: RESETTING THE WATCHER
