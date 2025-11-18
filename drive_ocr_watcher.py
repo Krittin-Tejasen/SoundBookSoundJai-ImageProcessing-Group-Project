@@ -10,7 +10,7 @@ import threading
 import json
 
 
-base_dir = "C:/Users/User/OneDrive/Desktop/SoundBookSoundJai-ImageProcessing-Group-Project/models"
+base_dir = "C:/Users/User/Desktop/SoundBookSoundJai-ImageProcessing-Group-Project/models"
 rf_model, cnn_model, device = load_models(base_dir)
 
 # ----------------------------------------
