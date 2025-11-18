@@ -10,7 +10,7 @@ import threading
 import json
 
 
-base_dir = "C:/Users/User/OneDrive/Desktop/SoundBookSoundJai-ImageProcessing-Group-Project/models"
+base_dir = "C:/Users/User/OneDrive/SoundBookSoundJai-ImageProcessing-Group-Project/models"
 rf_model, cnn_model, device = load_models(base_dir)
 
 # ----------------------------------------
@@ -275,10 +275,31 @@ def watch_drive_folder(input_folder_id, output_folder_id, text_folder_id, audio_
                         print("[AUDIO] Saved to queue for later playback.")
                     else:
                         print("[AUDIO] Skipped playback.")
+            prompt_play_queue()
             time.sleep(poll_interval)
         except Exception as e:
             print("[ERROR]", e)
             time.sleep(30)
+
+def prompt_play_queue(queue_file="audio_queue.json"):
+    """
+    If there is a queue in queue_file, ask the user whether to play it now.
+    If the user answers y/yes -> call play_queued_audios() and then continue starting the watcher.
+    If the user answers anything else or the file is empty -> skip.
+    """
+    q = load_audio_queue(queue_file)
+    if not q:
+        return
+    try:
+        resp = input(f"[AUDIO QUEUE] Found {len(q)} files in '{queue_file}'. Play the queue now? (y = play / n = skip): ").strip().lower()
+    except Exception:
+        resp = ""
+    if resp in ("y", "yes"):
+        print("[AUDIO] Starting queued playback...")
+        play_queued_audios(queue_file)
+    else:
+        print("[AUDIO] Skipping queued playback.")
+
 
 if __name__ == "__main__":
     input_folder_id = "168KayTrlk3_r8ScA6qHmTZNfDMshkg6I"       #   Images folder
