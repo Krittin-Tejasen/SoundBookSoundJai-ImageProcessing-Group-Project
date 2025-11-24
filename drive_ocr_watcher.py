@@ -8,9 +8,13 @@ from gtts import gTTS
 from playsound import playsound
 import threading
 import json
+import warnings
+from sklearn.exceptions import InconsistentVersionWarning
+
+warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
 
 
-base_dir = "C:/Users/User/OneDrive/SoundBookSoundJai-ImageProcessing-Group-Project/models"
+base_dir = "C:/Users/User/OneDrive/Desktop/SoundBookSoundJai_Project/models"
 rf_model, cnn_model, device = load_models(base_dir)
 
 # ----------------------------------------
@@ -133,6 +137,7 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
     if audio_path is not None:
         upload_file_to_drive(drive, audio_path, audio_folder_id)
     print(f"[UPLOAD] Processed image uploaded to Drive ✅")
+    print(f"----------------------------------------------")
 
     return {"status": "processed", "audio_path": audio_path}
 
@@ -144,7 +149,7 @@ def process_image_file(local_path, drive, output_folder_id, text_folder_id, audi
 # play_mode: "immediate", "batch", or "prompt"
 PLAY_MODE = "prompt"
 # For prompt mode, auto-decide after timeout_seconds if user doesn't reply
-PROMPT_TIMEOUT_SECONDS = 30
+PROMPT_TIMEOUT_SECONDS = 100
 # Use 'playsound' or 'pydub' backend. If playsound not installed, pip install playsound
 PLAYBACK_BACKEND = "playsound"
 
@@ -195,6 +200,7 @@ def play_queued_audios(queue_file="audio_queue.json"):
 # ----------------------------------------
 # ------------- Main Watcher -------------
 # ----------------------------------------
+
 def watch_drive_folder(input_folder_id, output_folder_id, text_folder_id, audio_folder_id, poll_interval=10):
     
     drive = connect_drive()
@@ -205,7 +211,7 @@ def watch_drive_folder(input_folder_id, output_folder_id, text_folder_id, audio_
     while True:
         try:
             files = get_folder_files(drive, input_folder_id)
-                        # collect new image files in this poll
+            # collect new image files in this poll
             new_image_files = []
             for f in files:
                 if f['id'] in seen:
@@ -302,8 +308,8 @@ def prompt_play_queue(queue_file="audio_queue.json"):
 
 
 if __name__ == "__main__":
-    input_folder_id = "168KayTrlk3_r8ScA6qHmTZNfDMshkg6I"       #   Images folder
-    output_folder_id = "1k2EvExrg5-jH3VGDinMZhuOXM8d2XlSn"      #   Removed_bg_images folder
-    text_folder_id = "1IbW5zPDM9_0Bv5y296zuVlzqMNAblOjC"        #   Text folder
-    audio_folder_id = "1fqrLE3KtwQVCRez4wwGMlSKdxEs3Px5v"       #   Audio folder
+    input_folder_id = "1UTz5qx_RtAyL_IzzKstMpkw1w804kurY"       #   Images folder
+    output_folder_id = "1PUh2BB5taTWTMZVPW_qVOi62yW9NA-Xb"      #   Removed_bg_images folder
+    text_folder_id = "1SHiMXazxwmiRFJ7PIOhQMS8PAJBhuHZV"        #   Text folder
+    audio_folder_id = "1Ys4Dj1ivHEBWQNhUOzkKPoFHg9jZQuee"       #   Audio folder
     watch_drive_folder(input_folder_id, output_folder_id, text_folder_id, audio_folder_id)

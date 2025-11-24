@@ -71,7 +71,8 @@ GOOGLE DRIVE SETUP
 4. Create OAuth client credentials (type: Desktop App).
 5. Download the `client_secrets.json` file.
 6. Place it in the same folder as `drive_ocr_watcher.py`.
-7. When you run the program for the first time, a browser window will open.
+7. Go to Google Auth Platfrom and select 'Audience'. Then add your email to 'Test users'.
+8. When you run the program for the first time, a browser window will open.
    Log in with your Google account and approve access.
 
 A new file `credentials.json` will be created automatically for future runs.
