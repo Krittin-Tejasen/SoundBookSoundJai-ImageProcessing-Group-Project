@@ -170,7 +170,7 @@ def enhance_for_ocr_auto(image):
     processed = binarize_adaptive(ensure_bgr(processed))
 
     # Morphology cleanup
-    kernel = np.ones((2, 2), np.uint8)
+    kernel = np.ones((1, 1), np.uint8)
     processed = cv2.morphologyEx(processed, cv2.MORPH_OPEN, kernel)
 
     print("[ACTION] Deskewing...")
